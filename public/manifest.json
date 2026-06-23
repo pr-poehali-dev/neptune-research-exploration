@@ -1,0 +1,18 @@
+{
+  "name": "AI Image — Генератор изображений",
+  "short_name": "AI Image",
+  "description": "Генерируйте изображения с помощью ИИ",
+  "start_url": "/generate",
+  "display": "standalone",
+  "background_color": "#09090b",
+  "theme_color": "#09090b",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "https://cdn.poehali.dev/projects/22317092-0d89-49a5-b613-1fc99556f96a/files/609a4db4-4223-4452-a1e8-65e16d38264a.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    }
+  ]
+}
