@@ -32,7 +32,7 @@ const Login = () => {
 
     localStorage.setItem("session_id", data.session_id);
     localStorage.setItem("user_email", data.email);
-    navigate("/");
+    navigate("/generate");
   };
 
   return (
