@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import Icon from '@/components/ui/icon';
 
 type ArcGalleryHeroProps = {
   images: string[];
@@ -25,10 +27,23 @@ const ArcGalleryHero = ({
   cardSizeSm = 80,
   className = '',
 }: ArcGalleryHeroProps) => {
+  const navigate = useNavigate();
   const [dimensions, setDimensions] = useState({
     radius: radiusLg,
     cardSize: cardSizeLg,
   });
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+
+  useEffect(() => {
+    setUserEmail(localStorage.getItem('user_email'));
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem('session_id');
+    localStorage.removeItem('user_email');
+    setUserEmail(null);
+    navigate('/');
+  };
 
   useEffect(() => {
     const handleResize = () => {
@@ -52,6 +67,32 @@ const ArcGalleryHero = ({
 
   return (
     <section className={`relative overflow-hidden bg-background min-h-screen flex flex-col ${className}`}>
+      <header className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-6 py-4">
+        <span className="font-bold text-foreground text-lg tracking-tight">AI Image</span>
+        <div>
+          {userEmail ? (
+            <div className="flex items-center gap-3">
+              <span className="text-sm text-muted-foreground hidden sm:block">{userEmail}</span>
+              <button
+                onClick={handleLogout}
+                className="flex items-center gap-2 px-4 py-2 rounded-full border border-border hover:bg-accent transition-colors text-sm text-foreground"
+              >
+                <Icon name="LogOut" size={15} />
+                Выйти
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              <Link to="/login" className="px-4 py-2 rounded-full text-sm text-muted-foreground hover:text-foreground transition-colors">
+                Войти
+              </Link>
+              <Link to="/register" className="px-4 py-2 rounded-full bg-primary text-primary-foreground text-sm hover:bg-primary/90 transition-colors">
+                Регистрация
+              </Link>
+            </div>
+          )}
+        </div>
+      </header>
       <div
         className="relative mx-auto"
         style={{
