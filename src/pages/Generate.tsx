@@ -1,15 +1,43 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import Icon from "@/components/ui/icon";
 import func2url from "../../backend/func2url.json";
+
+type HistoryItem = {
+  id: number;
+  prompt: string;
+  image_url: string;
+  created_at: string;
+};
 
 const Generate = () => {
   const [prompt, setPrompt] = useState("");
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [history, setHistory] = useState<HistoryItem[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [selected, setSelected] = useState<HistoryItem | null>(null);
 
   const userEmail = localStorage.getItem("user_email");
+  const sessionId = localStorage.getItem("session_id") || "";
+
+  const loadHistory = async () => {
+    if (!sessionId) return;
+    setHistoryLoading(true);
+    const res = await fetch(func2url["get-history"], {
+      headers: { "X-Session-Id": sessionId },
+    });
+    if (res.ok) {
+      const data = await res.json();
+      setHistory(data.items || []);
+    }
+    setHistoryLoading(false);
+  };
+
+  useEffect(() => {
+    loadHistory();
+  }, []);
 
   const handleGenerate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -17,10 +45,11 @@ const Generate = () => {
     setError("");
     setLoading(true);
     setImageUrl(null);
+    setSelected(null);
 
     const res = await fetch(func2url["generate-image"], {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "X-Session-Id": sessionId },
       body: JSON.stringify({ prompt }),
     });
 
@@ -33,27 +62,26 @@ const Generate = () => {
     }
 
     setImageUrl(data.url);
+    loadHistory();
   };
 
-  const handleDownload = () => {
-    if (!imageUrl) return;
+  const handleDownload = (url: string) => {
     const a = document.createElement("a");
-    a.href = imageUrl;
+    a.href = url;
     a.download = "generated-image.png";
     a.target = "_blank";
     a.click();
   };
 
+  const activeImage = selected ? selected.image_url : imageUrl;
+  const activePrompt = selected ? selected.prompt : prompt;
+
   return (
-    <main className="min-h-screen bg-background">
-      <header className="border-b border-border px-6 py-4 flex items-center justify-between">
-        <Link to="/" className="font-bold text-foreground text-lg tracking-tight">
-          AI Image
-        </Link>
+    <main className="min-h-screen bg-background flex flex-col">
+      <header className="border-b border-border px-6 py-4 flex items-center justify-between shrink-0">
+        <Link to="/" className="font-bold text-foreground text-lg tracking-tight">AI Image</Link>
         <div className="flex items-center gap-3">
-          {userEmail && (
-            <span className="text-sm text-muted-foreground hidden sm:block">{userEmail}</span>
-          )}
+          {userEmail && <span className="text-sm text-muted-foreground hidden sm:block">{userEmail}</span>}
           <Link to="/" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
             <Icon name="ArrowLeft" size={15} />
             На главную
@@ -61,77 +89,116 @@ const Generate = () => {
         </div>
       </header>
 
-      <div className="max-w-4xl mx-auto px-6 py-10">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground">Генератор изображений</h1>
-          <p className="mt-2 text-muted-foreground">Опишите, что хотите увидеть — ИИ создаст изображение за секунды</p>
-        </div>
-
-        <form onSubmit={handleGenerate} className="flex flex-col gap-4">
-          <div className="relative">
-            <textarea
-              value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-              placeholder="Например: закат над горами в стиле аниме, яркие цвета, детализированно..."
-              rows={4}
-              className="w-full px-4 py-4 rounded-2xl border border-border bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all resize-none text-sm"
-            />
-            <span className="absolute bottom-3 right-4 text-xs text-muted-foreground">{prompt.length} симв.</span>
-          </div>
-
-          {error && (
-            <p className="text-sm text-destructive bg-destructive/10 px-4 py-3 rounded-xl">{error}</p>
-          )}
-
-          <button
-            type="submit"
-            disabled={loading || !prompt.trim()}
-            className="flex items-center justify-center gap-2 w-full sm:w-auto sm:self-end px-8 py-3 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-all duration-200 font-medium shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none"
-          >
-            {loading ? (
-              <>
-                <Icon name="Loader2" size={18} className="animate-spin" />
-                Генерирую...
-              </>
-            ) : (
-              <>
-                <Icon name="Sparkles" size={18} />
-                Сгенерировать
-              </>
+      <div className="flex flex-1 overflow-hidden">
+        {/* Sidebar — история */}
+        <aside className="hidden md:flex flex-col w-72 border-r border-border shrink-0">
+          <div className="px-4 py-3 border-b border-border flex items-center gap-2">
+            <Icon name="History" size={16} className="text-muted-foreground" />
+            <span className="text-sm font-medium text-foreground">История</span>
+            {history.length > 0 && (
+              <span className="ml-auto text-xs text-muted-foreground">{history.length}</span>
             )}
-          </button>
-        </form>
-
-        {loading && (
-          <div className="mt-10 flex flex-col items-center justify-center gap-4 py-20 border border-border rounded-2xl bg-card">
-            <div className="w-12 h-12 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
-            <p className="text-muted-foreground text-sm">Создаю изображение, это займёт ~15 секунд...</p>
           </div>
-        )}
-
-        {imageUrl && !loading && (
-          <div className="mt-10">
-            <div className="rounded-2xl overflow-hidden border border-border shadow-xl">
-              <img src={imageUrl} alt={prompt} className="w-full object-contain max-h-[600px]" />
-            </div>
-            <div className="mt-4 flex flex-col sm:flex-row gap-3">
+          <div className="flex-1 overflow-y-auto p-2">
+            {historyLoading && (
+              <div className="flex justify-center py-8">
+                <div className="w-5 h-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+              </div>
+            )}
+            {!historyLoading && history.length === 0 && (
+              <p className="text-xs text-muted-foreground text-center py-8 px-4">
+                Здесь появятся ваши генерации
+              </p>
+            )}
+            {history.map((item) => (
               <button
-                onClick={handleDownload}
-                className="flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-all font-medium"
+                key={item.id}
+                onClick={() => { setSelected(item); setImageUrl(null); }}
+                className={`w-full flex gap-3 p-2 rounded-xl hover:bg-accent transition-colors text-left mb-1 ${selected?.id === item.id ? "bg-accent" : ""}`}
               >
-                <Icon name="Download" size={18} />
-                Скачать
+                <img
+                  src={item.image_url}
+                  alt=""
+                  className="w-12 h-12 rounded-lg object-cover shrink-0 border border-border"
+                />
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs text-foreground line-clamp-2 leading-snug">{item.prompt}</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {new Date(item.created_at).toLocaleDateString("ru-RU", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+                  </p>
+                </div>
               </button>
-              <button
-                onClick={() => { setImageUrl(null); setPrompt(""); }}
-                className="flex items-center justify-center gap-2 px-6 py-3 rounded-xl border border-border hover:bg-accent transition-all text-foreground"
-              >
-                <Icon name="RefreshCw" size={18} />
-                Новое изображение
-              </button>
-            </div>
+            ))}
           </div>
-        )}
+        </aside>
+
+        {/* Основная область */}
+        <div className="flex-1 flex flex-col overflow-y-auto p-6">
+          <div className="max-w-2xl mx-auto w-full">
+            <div className="mb-6">
+              <h1 className="text-2xl font-bold text-foreground">Генератор изображений</h1>
+              <p className="mt-1 text-sm text-muted-foreground">Опишите, что хотите увидеть — ИИ создаст изображение за секунды</p>
+            </div>
+
+            <form onSubmit={handleGenerate} className="flex flex-col gap-3">
+              <textarea
+                value={prompt}
+                onChange={(e) => { setPrompt(e.target.value); setSelected(null); }}
+                placeholder="Например: закат над горами в стиле аниме, яркие цвета, детализированно..."
+                rows={3}
+                className="w-full px-4 py-3 rounded-2xl border border-border bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all resize-none text-sm"
+              />
+
+              {error && (
+                <p className="text-sm text-destructive bg-destructive/10 px-4 py-3 rounded-xl">{error}</p>
+              )}
+
+              <button
+                type="submit"
+                disabled={loading || !prompt.trim()}
+                className="flex items-center justify-center gap-2 w-full px-8 py-3 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-all font-medium shadow-lg disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {loading ? (
+                  <><Icon name="Loader2" size={18} className="animate-spin" />Генерирую...</>
+                ) : (
+                  <><Icon name="Sparkles" size={18} />Сгенерировать</>
+                )}
+              </button>
+            </form>
+
+            {loading && (
+              <div className="mt-8 flex flex-col items-center justify-center gap-4 py-16 border border-border rounded-2xl bg-card">
+                <div className="w-10 h-10 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
+                <p className="text-muted-foreground text-sm">Создаю изображение, ~15 секунд...</p>
+              </div>
+            )}
+
+            {activeImage && !loading && (
+              <div className="mt-8">
+                <div className="rounded-2xl overflow-hidden border border-border shadow-xl">
+                  <img src={activeImage} alt={activePrompt} className="w-full object-contain max-h-[560px]" />
+                </div>
+                {selected && (
+                  <p className="mt-3 text-sm text-muted-foreground italic">"{selected.prompt}"</p>
+                )}
+                <div className="mt-4 flex gap-3">
+                  <button
+                    onClick={() => handleDownload(activeImage)}
+                    className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 transition-all text-sm font-medium"
+                  >
+                    <Icon name="Download" size={16} />Скачать
+                  </button>
+                  <button
+                    onClick={() => { setImageUrl(null); setSelected(null); setPrompt(""); }}
+                    className="flex items-center gap-2 px-5 py-2.5 rounded-xl border border-border hover:bg-accent transition-all text-foreground text-sm"
+                  >
+                    <Icon name="RefreshCw" size={16} />Новое
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </main>
   );
