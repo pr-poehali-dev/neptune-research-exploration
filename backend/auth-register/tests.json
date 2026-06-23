@@ -1,0 +1,22 @@
+{
+  "tests": [
+    {
+      "name": "Регистрация нового пользователя",
+      "method": "POST",
+      "path": "/",
+      "body": {"email": "test@example.com", "password": "password123"},
+      "expectedStatus": 200,
+      "expectedBody": {"session_id": "string"},
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Ошибка — короткий пароль",
+      "method": "POST",
+      "path": "/",
+      "body": {"email": "test2@example.com", "password": "123"},
+      "expectedStatus": 400,
+      "expectedBody": {"error": "string"},
+      "bodyMatcher": "partial"
+    }
+  ]
+}
