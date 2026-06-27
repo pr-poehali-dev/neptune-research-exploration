@@ -1,4 +1,5 @@
 {
+  "auth-vk": "https://functions.poehali.dev/0c9f2a20-ae61-4b23-a6d0-f6c523c3fe25",
   "get-history": "https://functions.poehali.dev/a4c31411-910c-4c60-8b23-bec1e2d6f10d",
   "generate-image": "https://functions.poehali.dev/67ed3994-bec3-4fe8-82f1-0a0485152be0",
   "auth-register": "https://functions.poehali.dev/13c26ce7-d9f8-412c-80e5-4ed1e794a375",

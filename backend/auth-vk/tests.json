@@ -1,0 +1,11 @@
+{
+  "tests": [
+    {
+      "name": "Get VK auth URL",
+      "method": "GET",
+      "path": "/?provider=vk",
+      "expectedStatus": 200,
+      "bodyMatcher": "partial"
+    }
+  ]
+}

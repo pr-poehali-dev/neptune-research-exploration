@@ -3,6 +3,12 @@ import { Link, useNavigate } from "react-router-dom";
 import Icon from "@/components/ui/icon";
 import func2url from "../../backend/func2url.json";
 
+const startOAuth = async (provider: "vk" | "google") => {
+  const res = await fetch(`${func2url["auth-vk"]}?provider=${provider}`);
+  const data = await res.json();
+  if (data.auth_url) window.location.href = data.auth_url;
+};
+
 const Login = () => {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
@@ -49,7 +55,7 @@ const Login = () => {
 
         <div className="bg-card border border-border rounded-2xl p-8 shadow-lg">
           <div className="flex flex-col gap-3 mb-6">
-            <button className="flex items-center justify-center gap-3 w-full px-4 py-3 rounded-xl border border-border hover:bg-accent transition-colors text-foreground font-medium">
+            <button onClick={() => startOAuth("google")} className="flex items-center justify-center gap-3 w-full px-4 py-3 rounded-xl border border-border hover:bg-accent transition-colors text-foreground font-medium">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
                 <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
                 <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
@@ -59,7 +65,7 @@ const Login = () => {
               Войти через Google
             </button>
 
-            <button className="flex items-center justify-center gap-3 w-full px-4 py-3 rounded-xl border border-border hover:bg-accent transition-colors text-foreground font-medium">
+            <button onClick={() => startOAuth("vk")} className="flex items-center justify-center gap-3 w-full px-4 py-3 rounded-xl border border-border hover:bg-accent transition-colors text-foreground font-medium">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M15.684 0H8.316C1.592 0 0 1.592 0 8.316v7.368C0 22.408 1.592 24 8.316 24h7.368C22.408 24 24 22.408 24 15.684V8.316C24 1.592 22.408 0 15.684 0zm.692 13.5h-2.1c-.794 0-1.1.334-1.1 1.234V17h3.2l-.416 3.2H13.17V28.8H9.87V20.2H8V17h1.87v-2.266C9.87 12.5 11.27 11 13.97 11c1.166 0 2.406.2 2.406.2V13.5z" fill="#0077FF"/>
               </svg>
