@@ -67,7 +67,7 @@ def handler(event: dict, context) -> dict:
             return {
                 'statusCode': 200,
                 'headers': {'Access-Control-Allow-Origin': '*'},
-                'body': json.dumps({'auth_url': f"https://oauth.vk.com/authorize?{vk_params}"})
+                'body': json.dumps({'auth_url': f"https://id.vk.com/authorize?{vk_params}"})
             }
 
         token_params = urllib.parse.urlencode({
