@@ -25,6 +25,7 @@ const App = () => (
           <Route path="/login" element={<Login />} />
           <Route path="/generate" element={<Generate />} />
           <Route path="/auth/vk/callback" element={<OAuthCallback provider="vk" />} />
+          <Route path="/vk-callback" element={<OAuthCallback provider="vk" />} />
           <Route path="/auth/google/callback" element={<OAuthCallback provider="google" />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />

@@ -7,7 +7,7 @@ import urllib.parse
 import hashlib
 
 BASE_URL = "https://neptune-research-exploration.poehali.dev"
-VK_REDIRECT_URI = f"{BASE_URL}/auth/vk/callback"
+VK_REDIRECT_URI = f"{BASE_URL}/vk-callback"
 GOOGLE_REDIRECT_URI = f"{BASE_URL}/auth/google/callback"
 
 
