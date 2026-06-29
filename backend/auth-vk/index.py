@@ -62,34 +62,44 @@ def handler(event: dict, context) -> dict:
                 'scope': 'email',
                 'response_type': 'code',
                 'state': secrets.token_hex(16),
-                'v': '5.131',
             })
             return {
                 'statusCode': 200,
                 'headers': {'Access-Control-Allow-Origin': '*'},
-                'body': json.dumps({'auth_url': f"https://oauth.vk.com/authorize?{vk_params}"})
+                'body': json.dumps({'auth_url': f"https://id.vk.com/authorize?{vk_params}"})
             }
 
-        token_params = urllib.parse.urlencode({
+        token_payload = urllib.parse.urlencode({
             'client_id': os.environ['VK_CLIENT_ID'],
             'client_secret': os.environ['VK_CLIENT_SECRET'],
             'redirect_uri': VK_REDIRECT_URI,
             'code': code,
-        })
-        with urllib.request.urlopen(f"https://oauth.vk.com/access_token?{token_params}") as resp:
+            'grant_type': 'authorization_code',
+        }).encode()
+        req = urllib.request.Request('https://id.vk.com/oauth2/auth', data=token_payload, method='POST')
+        req.add_header('Content-Type', 'application/x-www-form-urlencoded')
+        with urllib.request.urlopen(req) as resp:
             token_data = json.loads(resp.read())
 
         if 'error' in token_data:
             return {'statusCode': 400, 'headers': {'Access-Control-Allow-Origin': '*'}, 'body': json.dumps({'error': token_data.get('error_description', 'VK auth error')})}
 
         access_token = token_data['access_token']
-        vk_user_id = str(token_data['user_id'])
-        email = token_data.get('email') or f"vk_{vk_user_id}@vk.local"
 
-        api_params = urllib.parse.urlencode({'user_ids': vk_user_id, 'fields': 'first_name,last_name', 'access_token': access_token, 'v': '5.131'})
-        with urllib.request.urlopen(f"https://api.vk.com/method/users.get?{api_params}") as resp:
-            vk_user = json.loads(resp.read()).get('response', [{}])[0]
-        name = f"{vk_user.get('first_name', '')} {vk_user.get('last_name', '')}".strip()
+        # Получаем данные пользователя через VK ID
+        userinfo_payload = urllib.parse.urlencode({
+            'client_id': os.environ['VK_CLIENT_ID'],
+            'access_token': access_token,
+        }).encode()
+        req2 = urllib.request.Request('https://id.vk.com/oauth2/user_info', data=userinfo_payload, method='POST')
+        req2.add_header('Content-Type', 'application/x-www-form-urlencoded')
+        with urllib.request.urlopen(req2) as resp:
+            userinfo = json.loads(resp.read())
+
+        user_info = userinfo.get('user', {})
+        vk_user_id = str(user_info.get('user_id', ''))
+        email = user_info.get('email') or f"vk_{vk_user_id}@vk.local"
+        name = f"{user_info.get('first_name', '')} {user_info.get('last_name', '')}".strip()
 
         conn = psycopg2.connect(os.environ['DATABASE_URL'])
         cur = conn.cursor()
